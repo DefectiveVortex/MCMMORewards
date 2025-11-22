@@ -1,6 +1,6 @@
-# McMMOLevelRewards
+# McMMORewards
 
-McMMOLevelRewards is a lightweight Minecraft plugin that allows server administrators to configure rewards (console commands) that are executed when a player reaches a specific level in an mcMMO skill.
+McMMORewards is a lightweight Minecraft plugin that allows server administrators to configure rewards (console commands) that are executed when a player reaches a specific level in an mcMMO skill.
 
 ## Features
 
@@ -18,7 +18,7 @@ McMMOLevelRewards is a lightweight Minecraft plugin that allows server administr
 
 ## Installation
 
-1. Download the `McMMOLevelRewards.jar`.
+1. Download the `McMMORewards.jar`.
 2. Place it in your server's `plugins` folder.
 3. Ensure you have `mcMMO` installed.
 4. Restart your server.
@@ -53,3 +53,4 @@ rewards:
 ## Permissions
 
 - `mcmmorewards.reload` - Allows access to the reload command (Default: OP).
+
