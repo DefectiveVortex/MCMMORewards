@@ -1,0 +1,11 @@
+rewards:
+  mining:
+    10:
+      - "give %player% diamond 1"
+      - "broadcast %player% has reached Mining level 10!"
+    50:
+      - "eco give %player% 500"
+      - "broadcast %player% reached Mining 50!"
+  herbalism:
+    25:
+      - "give %player% golden_apple 1"
