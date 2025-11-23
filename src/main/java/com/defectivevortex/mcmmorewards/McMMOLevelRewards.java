@@ -11,6 +11,8 @@ import java.util.logging.Level;
 public class McMMOLevelRewards extends JavaPlugin {
 
     private RewardManager rewardManager;
+    private com.defectivevortex.mcmmorewards.hooks.VaultHook vaultHook;
+    private com.defectivevortex.mcmmorewards.hooks.MMOCoreHook mmoCoreHook;
 
     @Override
     public void onEnable() {
@@ -23,7 +25,10 @@ public class McMMOLevelRewards extends JavaPlugin {
 
         saveDefaultConfig();
 
-        rewardManager = new RewardManager(this);
+        vaultHook = new com.defectivevortex.mcmmorewards.hooks.VaultHook(this);
+        mmoCoreHook = new com.defectivevortex.mcmmorewards.hooks.MMOCoreHook(this);
+
+        rewardManager = new RewardManager(this, vaultHook, mmoCoreHook);
         getServer().getPluginManager().registerEvents(new LevelRewardListener(this, rewardManager), this);
 
         getLogger().info("McMMOLevelRewards enabled!");

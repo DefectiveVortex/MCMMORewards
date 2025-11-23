@@ -6,7 +6,7 @@
 
     <groupId>com.defectivevortex</groupId>
     <artifactId>mcmmorewards</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.1</version>
     <packaging>jar</packaging>
 
     <name>McMMOLevelRewards</name>
@@ -62,6 +62,10 @@
             <id>codemc-repo</id>
             <url>https://repo.codemc.org/repository/maven-public/</url>
         </repository>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -76,6 +80,26 @@
             <artifactId>mcMMO</artifactId>
             <version>2.1.226</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.MilkBowl</groupId>
+            <artifactId>VaultAPI</artifactId>
+            <version>1.7</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.lumine</groupId>
+            <artifactId>MythicLib</artifactId>
+            <version>1.6.1</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/MythicLib.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>net.Indyuce</groupId>
+            <artifactId>mmocore-api</artifactId>
+            <version>1.12</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/lib/MMOCore.jar</systemPath>
         </dependency>
     </dependencies>
 </project>

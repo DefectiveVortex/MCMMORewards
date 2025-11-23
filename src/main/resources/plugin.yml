@@ -4,6 +4,7 @@ main: com.defectivevortex.mcmmorewards.McMMOLevelRewards
 api-version: 1.20
 authors: [DefectiveVortex]
 depend: [mcMMO]
+softdepend: [Vault, MMOCore]
 commands:
   mcmmorewards:
     description: Main command for McMMOLevelRewards

@@ -1,11 +1,46 @@
+# McMMORewards Configuration
+#
+# Placeholders:
+# %player% - Player name
+# %skill% - Skill name
+# %level% - Level reached
+
 rewards:
   mining:
+    # Legacy format (List of commands) - Still supported
     10:
-      - "give %player% diamond 1"
-      - "broadcast %player% has reached Mining level 10!"
-    50:
-      - "eco give %player% 500"
-      - "broadcast %player% reached Mining 50!"
+      - "broadcast %player% reached Mining 10!"
+
+    # New format: Specific levels
+    levels:
+      25:
+        money: 100.0
+        commands:
+          - "msg %player% You earned $100 for reaching Mining 25!"
+      50:
+        money: 500.0
+        mmocore-xp:
+          class: "warrior" # Can be a class name or profession name
+          amount: 100
+        commands:
+          - "broadcast %player% reached Mining 50!"
+
+    # New format: Every X levels
+    every:
+      1: # Every level
+        mmocore-xp:
+          class: "main" # "main" usually targets the main class XP
+          amount: 5
+      10: # Every 10 levels (10, 20, 30...)
+        money: 50.0
+        commands:
+          - "msg %player% Keep up the good work! Here is $50."
+      100: # Every 100 levels
+        money: 1000.0
+        commands:
+          - "broadcast %player% is a Mining Master! Level %level%!"
+
   herbalism:
-    25:
-      - "give %player% golden_apple 1"
+    every:
+      5:
+        money: 20.0
