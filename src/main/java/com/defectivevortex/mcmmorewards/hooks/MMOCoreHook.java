@@ -28,7 +28,7 @@ public class MMOCoreHook {
         return enabled;
     }
 
-    public void giveExperience(Player player, String skillOrClass, int amount) {
+    public void giveExperience(Player player, String skillOrClass, double amount) {
         if (!enabled)
             return;
 

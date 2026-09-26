@@ -1,17 +1,21 @@
-# McMMORewards Configuration
+# McMMORewards config
 #
-# Placeholders:
-# %player% - Player name
-# %skill% - Skill name
-# %level% - Level reached
+# One section per mcMMO skill (upper/lower case doesn't matter). Inside a skill:
+#   levels: <level>    pays once, when that exact level is reached
+#   every:  <n>        pays at every multiple of n (every: 10 -> 10, 20, 30, ...)
+#   <level>: [...]     the old 1.0 style, just a list of commands
+#
+# A reward can have any of: commands, money (needs Vault), mmocore-xp (needs MMOCore).
+# Commands run from the console and can use %player%, %skill% and %level%.
+#
+# After editing, run /mcmmorewards reload.
 
 rewards:
   mining:
-    # Legacy format (List of commands) - Still supported
+    # Old style: a list of commands straight under the level
     10:
       - "broadcast %player% reached Mining 10!"
 
-    # New format: Specific levels
     levels:
       25:
         money: 100.0
@@ -20,22 +24,21 @@ rewards:
       50:
         money: 500.0
         mmocore-xp:
-          class: "warrior" # Can be a class name or profession name
+          class: "warrior" # an MMOCore profession id; anything else goes to the main class
           amount: 100
         commands:
           - "broadcast %player% reached Mining 50!"
 
-    # New format: Every X levels
     every:
-      1: # Every level
+      1:
         mmocore-xp:
-          class: "main" # "main" usually targets the main class XP
+          class: "main"
           amount: 5
-      10: # Every 10 levels (10, 20, 30...)
+      10:
         money: 50.0
         commands:
           - "msg %player% Keep up the good work! Here is $50."
-      100: # Every 100 levels
+      100:
         money: 1000.0
         commands:
           - "broadcast %player% is a Mining Master! Level %level%!"

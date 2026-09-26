@@ -1,124 +1,127 @@
 # McMMORewards
 
-McMMORewards is a feature-rich plugin that rewards players when they level up mcMMO skills. It supports console commands, direct money payouts via Vault, and MMOCore XP grants.
+A small add-on for mcMMO that hands out rewards when a player levels up a skill. A reward
+can be any mix of:
 
-## Features
+- console commands (`give`, `lp user ... permission set`, `broadcast`, whatever you like)
+- money, paid through Vault
+- MMOCore experience, for a class or a profession
 
-### Core Features
-- **Skill-Based Rewards**: Define rewards for any mcMMO skill (Mining, Herbalism, Acrobatics, etc.)
-- **Multiple Reward Types**: Execute commands, give money (Vault), or grant MMOCore XP
-- **Flexible Configuration**: Reward specific levels or every X levels
-- **Placeholders**: Use `%player%`, `%skill%`, and `%level%` in commands
-- **Reload Command**: Reload configuration without restarting the server
-
-### Reward Types
-1. **Console Commands**: Execute any console command as a reward
-2. **Vault Money**: Directly deposit money into player accounts (requires Vault + economy plugin)
-3. **MMOCore XP**: Grant experience to MMOCore classes or professions (requires MMOCore)
-
-### Advanced Configuration
-- **Specific Level Rewards**: Trigger rewards at exact levels (e.g., Level 10, 50, 100)
-- **Every X Levels**: Automatically reward players every N levels (e.g., every 5 levels, every 100 levels)
-- **Mixed Rewards**: Combine commands, money, and MMOCore XP in a single reward
+You pick which skills pay out and at which levels: an exact level (Mining 50), or every N
+levels (every 10 levels of Herbalism).
 
 ## Requirements
 
-- **Java 17+**
-- **Spigot/Paper 1.20+**
-- **mcMMO**: Required (mcMMO Classic)
-- **Vault** *(Optional)*: For money rewards
-- **MMOCore** *(Optional)*: For MMOCore XP rewards
+- Paper 1.20.5 or newer, on Java 17 or newer. Version 1.2 was tested on Paper 26.3, 1.21.11
+  and 1.20.6. Older 1.20 servers will probably work with an older mcMMO 2.x, but I haven't
+  tried that.
+- mcMMO 2.x. Tested with 2.3.001, which itself needs 1.20.5 or newer.
+- Vault plus an economy plugin, if you want money rewards (optional).
+- MMOCore, if you want MMOCore XP rewards (optional).
 
-## Installation
+Vault and MMOCore aren't required. If one is missing, the plugin logs a warning at startup,
+skips that part of any reward, and still runs everything else.
 
-1. Download the `mcmmorewards-1.1.jar` from releases
-2. Place it in your server's `plugins` folder
-3. Ensure you have `mcMMO` installed
-4. *(Optional)* Install `Vault` and an economy plugin for money rewards
-5. *(Optional)* Install `MMOCore` for XP rewards
-6. Restart your server
+## Installing
 
-## Configuration
+1. Grab `mcmmorewards-<version>.jar` from the releases page (GitHub or Modrinth).
+2. Drop it into `plugins/` next to mcMMO.
+3. Restart the server. A default `plugins/McMMOLevelRewards/config.yml` is created on
+   first start.
+4. Edit the config, then run `/mcmmorewards reload`.
 
-The `config.yml` allows you to define rewards with a flexible structure:
+## Config
 
-### Basic Example (Commands Only)
+Everything lives under `rewards`, one section per mcMMO skill. Skill names aren't case
+sensitive, so `mining`, `Mining` and `MINING` all work. Only what's in your file counts:
+if you delete one of the example rewards, it's gone.
+
+```yaml
+rewards:
+  mining:
+    # Exact levels
+    levels:
+      25:
+        money: 100
+        commands:
+          - "msg %player% Here's $100 for reaching %skill% %level%."
+      50:
+        money: 500
+        mmocore-xp:
+          class: "mining"   # an MMOCore profession id, or anything else for main class XP
+          amount: 100
+        commands:
+          - "broadcast %player% just hit Mining 50!"
+
+    # Every N levels (every: 10 fires at 10, 20, 30, ...)
+    every:
+      10:
+        money: 50
+      100:
+        commands:
+          - "broadcast %player% reached Mining %level%!"
+
+  herbalism:
+    every:
+      5:
+        money: 20
+```
+
+A reward can have any combination of these keys:
+
+| Key | What it does |
+|---|---|
+| `commands` | List of commands, run from the console. A leading `/` is fine. |
+| `money` | Amount to deposit through Vault. |
+| `mmocore-xp.class` | The MMOCore profession to give XP in. If the name isn't a profession, the XP goes to the player's main class instead (`main` is a handy name for that). |
+| `mmocore-xp.amount` | How much XP. Decimals are allowed. |
+
+Commands can use three placeholders:
+
+- `%player%`: the player's name
+- `%skill%`: the skill, written like `Mining` or `Woodcutting`
+- `%level%`: the level that was just reached
+
+If a level matches more than one entry, every one of them pays out. At Mining 50 with the
+config above, the player gets the `levels: 50` reward and the `every: 10` reward.
+
+The older 1.0 format, a plain list of commands directly under the level, still works:
+
 ```yaml
 rewards:
   mining:
     10:
       - "give %player% diamond 1"
-      - "broadcast %player% has reached Mining level 10!"
 ```
 
-### Advanced Example (All Features)
-```yaml
-rewards:
-  mining:
-    # Specific level rewards
-    levels:
-      25:
-        money: 100.0
-        commands:
-          - "msg %player% You earned $100 for reaching Mining 25!"
-      50:
-        money: 500.0
-        mmocore-xp:
-          class: "warrior"
-          amount: 100
-        commands:
-          - "broadcast %player% reached Mining 50!"
+## How level ups are counted
 
-    # Every X levels rewards
-    every:
-      1:  # Every level
-        mmocore-xp:
-          class: "main"
-          amount: 5
-      10:  # Every 10 levels (10, 20, 30...)
-        money: 50.0
-        commands:
-          - "msg %player% Keep up the good work! Here is $50."
-      100:  # Every 100 levels (100, 200, 300...)
-        money: 1000.0
-        commands:
-          - "broadcast %player% is a Mining Master! Level %level%!"
+- **Several levels at once.** mcMMO can hand out a pile of levels in one go (a big XP drop,
+  `/addlevels`, `/mmoedit`). Each level along the way counts. Going from 8 to 12 with
+  `every: 5` configured pays for level 10, even though mcMMO only announces 12.
+- **Cancelled level ups.** If another plugin cancels mcMMO's level up event, mcMMO takes the
+  levels back and no reward is given.
+- **Losing and regaining levels.** The plugin doesn't remember what it already paid. If a
+  player drops below a level (an admin edit, or mcMMO's hardcore death penalty if you've
+  turned it on) and climbs back up, that level pays out again. Keep that in mind before
+  putting big rewards on low levels on a hardcore server.
 
-  herbalism:
-    every:
-      5:
-        money: 20.0
+## Commands and permissions
+
+| Command | Permission | Default |
+|---|---|---|
+| `/mcmmorewards reload` | `mcmmorewards.reload` | ops |
+
+## Building
+
+```bash
+mvn package
 ```
 
-### Configuration Structure
+Needs JDK 17 or newer. The jar ends up in `target/mcmmorewards-<version>.jar`. Everything
+comes from public Maven repositories (Paper, mcMMO's nexus, Phoenix Development's nexus for
+the MMOCore API, and JitPack for Vault), so no local jars are needed.
 
-- **`rewards.<skill>.levels.<level>`**: Reward for a specific level
-- **`rewards.<skill>.every.<interval>`**: Reward for every X levels
-- **`rewards.<skill>.<level>`**: Legacy format (list of commands) - still supported
+## License
 
-### Reward Options
-
-Each reward entry can contain:
-- **`commands`**: List of console commands to execute
-- **`money`**: Amount of money to give (requires Vault)
-- **`mmocore-xp`**: MMOCore experience to grant (requires MMOCore)
-  - **`class`**: Class/profession name (`"main"` for main class XP)
-  - **`amount`**: Amount of XP to grant
-
-### Placeholders
-
-- `%player%` - Player's name
-- `%skill%` - Skill name (e.g., "Mining")
-- `%level%` - Level reached
-
-## Commands
-
-- `/mcmmorewards reload` - Reloads the `config.yml` file
-
-## Permissions
-
-- `mcmmorewards.reload` - Allows access to the reload command (Default: OP)
-
-## Support
-
-For issues, feature requests, or questions, please open an issue on the GitHub repository.
+GPL-3.0, see [LICENSE](LICENSE).

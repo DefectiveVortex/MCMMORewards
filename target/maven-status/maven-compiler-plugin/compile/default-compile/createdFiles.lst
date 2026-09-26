@@ -1,7 +1,0 @@
-com\defectivevortex\mcmmorewards\hooks\VaultHook.class
-com\defectivevortex\mcmmorewards\RewardManager.class
-com\defectivevortex\mcmmorewards\hooks\MMOCoreHook.class
-com\defectivevortex\mcmmorewards\McMMOLevelRewards.class
-com\defectivevortex\mcmmorewards\model\Reward$MMOCoreReward.class
-com\defectivevortex\mcmmorewards\model\Reward.class
-com\defectivevortex\mcmmorewards\LevelRewardListener.class

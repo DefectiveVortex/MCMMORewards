@@ -1,13 +1,15 @@
 name: McMMOLevelRewards
 version: ${project.version}
 main: com.defectivevortex.mcmmorewards.McMMOLevelRewards
-api-version: 1.20
+api-version: '1.20'
+description: Rewards for levelling up mcMMO skills (commands, Vault money, MMOCore XP)
+website: https://github.com/DefectiveVortex/MCMMORewards
 authors: [DefectiveVortex]
 depend: [mcMMO]
 softdepend: [Vault, MMOCore]
 commands:
   mcmmorewards:
-    description: Main command for McMMOLevelRewards
+    description: Reload the McMMORewards config
     usage: /<command> reload
     permission: mcmmorewards.reload
 permissions:

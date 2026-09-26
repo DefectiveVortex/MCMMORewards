@@ -3,12 +3,12 @@ package com.defectivevortex.mcmmorewards.model;
 import java.util.List;
 
 public class Reward {
-    private List<String> commands;
-    private double money;
-    private MMOCoreReward mmocoreReward;
+    private final List<String> commands;
+    private final double money;
+    private final MMOCoreReward mmocoreReward;
 
     public Reward(List<String> commands, double money, MMOCoreReward mmocoreReward) {
-        this.commands = commands;
+        this.commands = commands == null ? List.of() : commands;
         this.money = money;
         this.mmocoreReward = mmocoreReward;
     }
@@ -26,10 +26,10 @@ public class Reward {
     }
 
     public static class MMOCoreReward {
-        private String name;
-        private int amount;
+        private final String name;
+        private final double amount;
 
-        public MMOCoreReward(String name, int amount) {
+        public MMOCoreReward(String name, double amount) {
             this.name = name;
             this.amount = amount;
         }
@@ -38,7 +38,7 @@ public class Reward {
             return name;
         }
 
-        public int getAmount() {
+        public double getAmount() {
             return amount;
         }
     }
