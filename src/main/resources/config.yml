@@ -8,6 +8,8 @@
 # A reward can have any of: commands, money (needs Vault), mmocore-xp (needs MMOCore).
 # Commands run from the console and can use %player%, %skill% and %level%.
 #
+# multi-rewards (below 'rewards') need several skill levels at once. See the example there.
+#
 # After editing, run /mcmmorewards reload.
 
 rewards:
@@ -47,3 +49,16 @@ rewards:
     every:
       5:
         money: 20.0
+
+# Rewards that need several skill levels at once. Give each one any name and list every
+# skill level it needs under 'requires'; add as many skills as you like. It pays once, at
+# the level up that meets the last requirement, whichever skill that is. In commands,
+# %skill% and %level% are that last skill and the level it just reached.
+multi-rewards:
+  acrobatic-miner:
+    requires:
+      acrobatics: 10
+      mining: 20
+    money: 250.0
+    commands:
+      - "broadcast %player% reached Acrobatics 10 and Mining 20!"

@@ -31,7 +31,7 @@ public class McMMOLevelRewards extends JavaPlugin {
         rewardManager = new RewardManager(this, vaultHook, mmoCoreHook);
         getServer().getPluginManager().registerEvents(new LevelRewardListener(this, rewardManager), this);
 
-        getLogger().info("McMMOLevelRewards enabled with rewards for " + countSkills() + " skill(s).");
+        getLogger().info("McMMOLevelRewards enabled with " + describeRewards() + ".");
     }
 
     @Override
@@ -59,7 +59,7 @@ public class McMMOLevelRewards extends JavaPlugin {
             return true;
         }
         reloadConfig();
-        sender.sendMessage("§aMcMMOLevelRewards config reloaded (" + countSkills() + " skill(s) with rewards).");
+        sender.sendMessage("§aMcMMOLevelRewards config reloaded (" + describeRewards() + ").");
         getLogger().info("Config reloaded by " + sender.getName());
         return true;
     }
@@ -74,8 +74,12 @@ public class McMMOLevelRewards extends JavaPlugin {
         return List.of();
     }
 
-    private int countSkills() {
+    // Also warns about multi-rewards that can never pay, so a typo shows up at reload, not never.
+    private String describeRewards() {
         ConfigurationSection rewards = getConfig().getConfigurationSection("rewards");
-        return rewards == null ? 0 : rewards.getKeys(false).size();
+        int skills = rewards == null ? 0 : rewards.getKeys(false).size();
+        String text = "rewards for " + skills + " skill(s)";
+        int multi = rewardManager.validateMultiRewards();
+        return multi == 0 ? text : text + " and " + multi + " multi-reward(s)";
     }
 }

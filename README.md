@@ -7,12 +7,13 @@ can be any mix of:
 - money, paid through Vault
 - MMOCore experience, for a class or a profession
 
-You pick which skills pay out and at which levels: an exact level (Mining 50), or every N
-levels (every 10 levels of Herbalism).
+You pick which skills pay out and at which levels: an exact level (Mining 50), every N
+levels (every 10 levels of Herbalism), or a set of levels in several skills at once
+(Acrobatics 10 and Mining 20).
 
 ## Requirements
 
-- Paper 1.20.5 or newer, on Java 17 or newer. Version 1.2 was tested on Paper 26.3, 1.21.11
+- Paper 1.20.5 or newer, on Java 17 or newer. Version 1.3 was tested on Paper 26.3, 1.21.11
   and 1.20.6. Older 1.20 servers will probably work with an older mcMMO 2.x, but I haven't
   tried that.
 - mcMMO 2.x. Tested with 2.3.001, which itself needs 1.20.5 or newer.
@@ -85,6 +86,32 @@ Commands can use three placeholders:
 If a level matches more than one entry, every one of them pays out. At Mining 50 with the
 config above, the player gets the `levels: 50` reward and the `every: 10` reward.
 
+### Rewards that need several skills
+
+A reward under `multi-rewards` needs a level in each of several skills. Give it any name,
+list what it needs under `requires` (as many skills as you like), and add the usual reward
+keys next to it:
+
+```yaml
+multi-rewards:
+  acrobatic-miner:
+    requires:
+      acrobatics: 10
+      mining: 20
+    money: 250
+    commands:
+      - "broadcast %player% reached Acrobatics 10 and Mining 20!"
+```
+
+It pays once, at the level up that meets the last requirement, whichever skill gets there
+last. A player at Mining 25 who reaches Acrobatics 10 gets it right then; so does a player
+at Acrobatics 12 who reaches Mining 20. In its commands, `%skill%` and `%level%` are that
+last skill and the level it just reached. `multi-rewards` sits at the top level of the
+config, next to `rewards`, not inside it. Skill names that mcMMO doesn't know are reported
+in the console at startup and on `/mcmmorewards reload`.
+
+Configs from 1.2 and earlier work unchanged; `multi-rewards` is optional.
+
 The older 1.0 format, a plain list of commands directly under the level, still works:
 
 ```yaml
@@ -104,7 +131,12 @@ rewards:
 - **Losing and regaining levels.** The plugin doesn't remember what it already paid. If a
   player drops below a level (an admin edit, or mcMMO's hardcore death penalty if you've
   turned it on) and climbs back up, that level pays out again. Keep that in mind before
-  putting big rewards on low levels on a hardcore server.
+  putting big rewards on low levels on a hardcore server. The same goes for a multi-reward:
+  if a player drops below one of its levels and climbs back, it pays again.
+- **Levels players already have.** Rewards pay when a level is reached, not for levels a
+  player already had. If you add a reward for Mining 25, players already past 25 don't get
+  it. A multi-reward is the same: a player who already meets every requirement when you add
+  it doesn't get it at join or on reload.
 
 ## Commands and permissions
 

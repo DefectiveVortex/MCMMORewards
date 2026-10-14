@@ -3,13 +3,18 @@ package com.defectivevortex.mcmmorewards;
 import com.defectivevortex.mcmmorewards.hooks.MMOCoreHook;
 import com.defectivevortex.mcmmorewards.hooks.VaultHook;
 import com.defectivevortex.mcmmorewards.model.Reward;
+import com.gmail.nossr50.api.ExperienceAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -28,10 +33,147 @@ public class RewardManager {
     }
 
     public void checkAndGiveRewards(Player player, String skillName, int level) {
+        String skill = displayName(skillName);
         List<Reward> rewards = findRewards(plugin.getConfig().getConfigurationSection("rewards"), skillName, level, logger);
         for (Reward reward : rewards) {
-            executeReward(player, reward, displayName(skillName), level);
+            executeReward(player, reward, skill, level, "reaching " + skill + " level " + level);
         }
+
+        ConfigurationSection multiSection = plugin.getConfig().getConfigurationSection("multi-rewards");
+        Map<String, Reward> multi = findMultiRewards(multiSection, skillName, level, other -> currentLevel(player, other));
+        for (Map.Entry<String, Reward> entry : multi.entrySet()) {
+            executeReward(player, entry.getValue(), skill, level,
+                    "completing multi-reward '" + entry.getKey() + "' with " + skill + " level " + level);
+        }
+    }
+
+    // The player's level in another skill right now, or -1 if mcMMO can't tell (unknown skill,
+    // profile not loaded yet). -1 never meets a requirement, so the reward waits.
+    private int currentLevel(Player player, String skillName) {
+        try {
+            return ExperienceAPI.getLevel(player, skillName);
+        } catch (RuntimeException e) {
+            return -1;
+        }
+    }
+
+    /**
+     * Multi-rewards completed by reaching this level in this skill, keyed by their name.
+     *
+     * A multi-reward pays when its LAST requirement is met: this skill has to be one of its
+     * requirements, at exactly this level, and every other requirement has to be met already.
+     * That makes it pay once, at the level up that completes it, whichever skill comes last,
+     * the same way a "levels:" reward pays once when its level is reached.
+     */
+    static Map<String, Reward> findMultiRewards(ConfigurationSection multiSection, String skillName, int level,
+            ToIntFunction<String> currentLevel) {
+        Map<String, Reward> found = new LinkedHashMap<>();
+        if (multiSection == null) {
+            return found;
+        }
+        String skill = skillName.toLowerCase(Locale.ROOT);
+        for (String name : multiSection.getKeys(false)) {
+            ConfigurationSection entry = multiSection.getConfigurationSection(name);
+            if (entry == null) {
+                continue;
+            }
+            Map<String, Integer> requires = parseRequirements(entry, name, null);
+            Integer needed = requires.get(skill);
+            if (needed == null || needed != level) {
+                continue;
+            }
+            boolean othersMet = true;
+            for (Map.Entry<String, Integer> req : requires.entrySet()) {
+                if (!req.getKey().equals(skill) && currentLevel.applyAsInt(req.getKey()) < req.getValue()) {
+                    othersMet = false;
+                    break;
+                }
+            }
+            if (othersMet) {
+                addIfPresent(found, name, parseReward(entry));
+            }
+        }
+        return found;
+    }
+
+    /**
+     * The "requires" map of one multi-reward: lower case skill name -> level. Entries that
+     * aren't a whole number of at least 1 are left out (and reported when a logger is given).
+     * The same skill written twice in different case keeps the higher level.
+     */
+    static Map<String, Integer> parseRequirements(ConfigurationSection entry, String name, Logger logger) {
+        Map<String, Integer> requires = new LinkedHashMap<>();
+        ConfigurationSection section = entry.getConfigurationSection("requires");
+        if (section == null) {
+            if (logger != null) {
+                logger.warning("multi-rewards." + name + " has no 'requires' section, so it never pays.");
+            }
+            return requires;
+        }
+        for (String key : section.getKeys(false)) {
+            Object value = section.get(key);
+            int needed = value instanceof Number number && number.doubleValue() == number.intValue()
+                    ? number.intValue() : parseWholeNumber(value);
+            if (needed < 1) {
+                if (logger != null) {
+                    logger.warning("Ignoring multi-rewards." + name + ".requires." + key + ": '" + value
+                            + "' isn't a level of 1 or more.");
+                }
+                continue;
+            }
+            requires.merge(key.toLowerCase(Locale.ROOT), needed, Math::max);
+        }
+        if (requires.isEmpty() && logger != null) {
+            logger.warning("multi-rewards." + name + " has no valid requirements, so it never pays.");
+        }
+        return requires;
+    }
+
+    private static int parseWholeNumber(Object value) {
+        if (value instanceof String text) {
+            try {
+                return Integer.parseInt(text.trim());
+            } catch (NumberFormatException ignored) {
+                // falls through
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Logs a warning for each multi-reward that can never pay: no requirements, a broken
+     * level, or a skill mcMMO doesn't know. Returns how many multi-rewards are configured.
+     */
+    static int validateMultiRewards(ConfigurationSection multiSection, Predicate<String> isSkill, Logger logger) {
+        if (multiSection == null) {
+            return 0;
+        }
+        int count = 0;
+        for (String name : multiSection.getKeys(false)) {
+            ConfigurationSection entry = multiSection.getConfigurationSection(name);
+            if (entry == null) {
+                logger.warning("Ignoring multi-rewards." + name + ": it isn't a section.");
+                continue;
+            }
+            count++;
+            for (String skill : parseRequirements(entry, name, logger).keySet()) {
+                if (!isSkill.test(skill)) {
+                    logger.warning("multi-rewards." + name + " requires '" + skill
+                            + "', which isn't an mcMMO skill, so it never pays.");
+                }
+            }
+        }
+        return count;
+    }
+
+    public int validateMultiRewards() {
+        return validateMultiRewards(plugin.getConfig().getConfigurationSection("multi-rewards"), skill -> {
+            try {
+                return ExperienceAPI.isValidSkillType(skill);
+            } catch (RuntimeException | LinkageError e) {
+                return true; // can't check on this mcMMO version; don't cry wolf
+            }
+        }, logger);
     }
 
     /**
@@ -99,6 +241,12 @@ public class RewardManager {
         }
     }
 
+    private static void addIfPresent(Map<String, Reward> map, String name, Reward reward) {
+        if (reward != null) {
+            map.put(name, reward);
+        }
+    }
+
     static Reward parseReward(Object data) {
         if (data instanceof List<?> list) {
             // Old format: just a list of commands
@@ -137,8 +285,8 @@ public class RewardManager {
         return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
     }
 
-    private void executeReward(Player player, Reward reward, String skillName, int level) {
-        logger.info("Giving rewards to " + player.getName() + " for reaching " + skillName + " level " + level);
+    private void executeReward(Player player, Reward reward, String skillName, int level, String reason) {
+        logger.info("Giving rewards to " + player.getName() + " for " + reason);
 
         // 1. Commands
         for (String command : reward.getCommands()) {
